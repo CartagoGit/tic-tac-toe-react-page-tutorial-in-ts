@@ -2,45 +2,64 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
 
-type possibilities = "X" | "O" | null;
+type Possibilities = "X" | "O" | null;
 
 interface SquareProps {
-	value: possibilities;
+	value: Possibilities;
 	onClick: () => void;
 }
 
 interface BoardProps {}
 interface BoardState {
-	squares: Array<possibilities>;
+	squares: Array<Possibilities>;
+	xIsNext: boolean;
 }
 
-class Square extends React.Component<SquareProps> {
-	// state: SquareProps;
-	// constructor(props: SquareProps) {
-	// 	super(props);
-	// 	this.state = { value: null, onClick: () => {} };
-	// }
-	render() {
-		return (
-			<button
-				className="square"
-				onClick={() => this.props.onClick()}
-			>
-				{this.props.value}
-			</button>
-		);
-	}
-}
+interface GameProps {}
+interface GameState {}
+
+// class Square extends React.Component<SquareProps> {
+// 	// state: SquareProps;
+// 	// constructor(props: SquareProps) {
+// 	// 	super(props);
+// 	// 	this.state = { value: null, onClick: () => {} };
+// 	// }
+// 	render() {
+// 		return (
+// 			<button
+// 				className="square"
+// 				onClick={() => this.props.onClick()}
+// 			>
+// 				{this.props.value}
+// 			</button>
+// 		);
+// 	}
+// }
+
+const Square = (props: SquareProps) => {
+	return (
+		<button
+			className="square"
+			onClick={props.onClick}
+		>
+			{props.value}
+		</button>
+	);
+};
 
 class Board extends React.Component<BoardProps, BoardState> {
 	constructor(props: BoardProps) {
 		super(props);
-		this.state = { squares: Array(9).fill(null) };
+		this.state = {
+			squares: Array(9).fill(null),
+			xIsNext: true,
+		};
 	}
 	handleClick(i: number): void {
 		const squares = this.state.squares.slice();
-		squares[i] = "X";
-		this.setState({ squares });
+		if (calculateWinner(squares) || squares[i]) return;
+		squares[i] = this.state.xIsNext ? "X" : "O";
+		this.setState({ squares, xIsNext: !this.state.xIsNext });
 	}
 
 	renderSquare(i: number) {
@@ -53,7 +72,10 @@ class Board extends React.Component<BoardProps, BoardState> {
 	}
 
 	render() {
-		const status = "Next player: X";
+		const winner = calculateWinner(this.state.squares);
+		let status;
+		if (winner) status = "The Winner is... " + winner;
+		else status = "Next player: " + (this.state.xIsNext ? "X" : "O");
 
 		return (
 			<div>
@@ -78,7 +100,14 @@ class Board extends React.Component<BoardProps, BoardState> {
 	}
 }
 
-class Game extends React.Component {
+class Game extends React.Component<GameProps, GameState> {
+	constructor(props: GameProps) {
+		super(props);
+		this.state = {
+			history: [{ squares: Array(9).fill(null) }],
+			xIsNext: true,
+		};
+	}
 	render() {
 		return (
 			<div className="game">
@@ -100,3 +129,23 @@ const root = ReactDOM.createRoot(
 	document.getElementById("root") as HTMLElement
 );
 root.render(<Game />);
+
+function calculateWinner(squares: Array<Possibilities>) {
+	const lines = [
+		[0, 1, 2],
+		[3, 4, 5],
+		[6, 7, 8],
+		[0, 3, 6],
+		[1, 4, 7],
+		[2, 5, 8],
+		[0, 4, 8],
+		[2, 4, 6],
+	];
+	for (let i = 0; i < lines.length; i++) {
+		const [a, b, c] = lines[i];
+		if (squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+			return squares[a];
+		}
+	}
+	return null;
+}
